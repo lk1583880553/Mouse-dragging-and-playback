@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>鼠标拖拽轨迹回放</title>
+		<style type="text/css">
+			*{
+				margin: 0;
+				padding: 0;
+			}
+			body{
+				background: url(img/name.png) no-repeat;
+				background-size: cover;
+			}
+			#box{
+				top: 0;
+				left: 0;
+				width: 200px;
+				height: 200px;
+				background: url(img/panda1.gif) center;
+				border-radius: 50%;
+				position: absolute;
+				box-shadow: 0 0 5px black;
+			}
+			#btn{
+				width: 200px;
+				height: 100px;
+				display: block;
+				border: none;
+				color: white;
+				cursor: pointer;
+				outline: none;
+				font-size: 18px;
+				background: orangered;
+				text-shadow: 0 0 3px black;
+				box-shadow: 0 0 5px yellow;
+				margin: 50px auto;
+			}
+			#btn:hover{
+				background: skyblue;
+			}
+			#pox{
+				width: 200px;
+				height: 80px;
+				bottom: 0;
+				left: 0;
+				background: rgba(0,0,0,0.65);
+				color: white;
+				font-size: 16px;
+				line-height: 80px;
+				text-align: center;
+				border-radius: 5%;
+				position: absolute;
+				box-shadow: 0 0 5px black;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="box"></div>
+		<div id="pox"></div>
+			
+		</div>
+		<input type="button" name="btn" id="btn" value="时光倒流" />
+		<script type="text/javascript">
+			var oDiv = document.getElementById('box');
+			var oInpt = document.getElementById('btn');
+			var oPox = document.getElementById('pox');
+			oPox.innerHTML="<b>X轴:</b>"+ 0 + 'px' + "&nbsp;&nbsp" + "<b>Y轴:</b>" + 0 + 'px';
+			var position=[{x:oDiv.offsetLeft,y:oDiv.offsetTop}];
+			//JSONArray的方式来记录Div运动轨迹的坐标变化数据
+			oDiv.onmousedown = function(evt){
+				var e = evt || window.event;
+				disX=e.offsetX;//鼠标点击位置相对于div的坐标位置
+				disY=e.offsetY;//鼠标点击位置相对于div的坐标位置
+				
+				position.push({x:oDiv.offsetLeft,y:oDiv.offsetTop});//记录从这时候已经开始了
+				
+				document.onmousemove = function(evt){
+					var e = evt || window.event;
+					var nowX = e.clientX - disX;//求出目前状态下div最左侧离浏览器屏幕最左侧的距离
+					var nowY = e.clientY - disY;//求出目前状态下div最下侧离浏览器屏幕最下侧的距离
+					
+					var maxX=document.documentElement.clientWidth-oDiv.offsetWidth;//求出div最左侧离浏览器屏幕最左侧的最大距离值
+					var maxY=document.documentElement.clientHeight-oDiv.offsetHeight;//求出div最下侧离浏览器屏幕最下侧的最大距离值
+					
+					nowX = nowX < 0 ? 0 : nowX;//判断div是否超过浏览器可视屏幕的最左侧
+					nowY = nowY < 0 ? 0 : nowY;//判断div是否超过浏览器可视屏幕的最上侧
+					nowX = nowX > maxX ? maxX : nowX;//判断div是否超过浏览器可视屏幕右侧
+					nowY = nowY > maxY ? maxY : nowY;//判断div是否超过浏览器可视屏幕最下侧
+					
+					oDiv.style.top = nowY + 'px';
+					oDiv.style.left = nowX + 'px';
+					//求出不停运动中Div的位置
+					position.push({x:nowX,y:nowY});
+					//不停记录,Div动一下json数组里就增加一些坐标值对象
+					//push后增返回值为新增后json数组的长度，影响原json数组
+					//所以此时position数组是不停增加json坐标值变化的新json数组
+					oPox.innerHTML="<b>X轴:</b>"+nowX + 'px' + "&nbsp;&nbsp" + "<b>Y轴:</b>" + nowY + 'px';
+					//Div在拖拽过程中直观地看到位置坐标的变化
+				}
+				document.onmouseup = function(){
+					document.onmousemove = null;
+					oPox.innerHTML="<b>X轴:</b>"+oDiv.offsetLeft + 'px' + '&nbsp;&nbsp' + "<b>Y轴:</b>" + oDiv.offsetTop + 'px';
+					//Div拖拽停止后的坐标位置显示
+				}
+			}
+			oInpt.onclick = function(){
+				if (position.length == 1) return;
+				//position JSON数组长度为一时，就是坐标位置值仅仅有一个的时候，说明Div并未移动
+				var timer = setInterval(function (){
+					var oPos = position.pop();
+					//这里的oPos指的是json对象，不是数组（json对象里的键:x和y,值:记录的Div的left和top值）
+					//这里后删的返回值是被删除的json对象，就是{x:nowX,y:nowY}
+					//每隔20毫秒就删除position JSON数组中最后面的json对象数据
+					oPos ? (oDiv.style.left = oPos.x + "px", oDiv.style.top = oPos.y + "px",
+				oPox.innerHTML="<b>X轴:</b>"+oPos.x + 'px' + "&nbsp;&nbsp" + "</b>Y轴:</b>"+oPos.y + 'px') : clearInterval(timer);
+				//三元选择语句来判断oPos对象是否存在,
+				//如果存在的情况下说明运动回放还没有完，json数组里还存在对象,此时记录并赋值——Div的坐标left:oPos.x和top:oPos.y并显示在右下角
+				//不存在为undefined,说明轨迹回放结束，回到最初的原点，此时清除计时器timer
+				}, 20);
+			}
+		</script>
+	</body>
+</html>
+<!--使用json的好处——
+1、轻量级的数据交换格式
+2、人们读写更加容易
+3、易于机器的解析和生成
+4、能够通过JavaScript中eval()函数解析JSON
+5、JSON支持多语言。包括：ActionScript, C, C#,E, Java, JavaScript, ML, Perl, PHP, Python
+——JSON与AJAX的关系
+	Ajax建立了一个用于从远程Web services发送和接收数据的独立信道，从而允许Web程序执行信道外客户端/服务器调用。
+AJAX技术能够使得每一次请求更加迅捷，对于每一次请求返回的不是整个页面，也仅仅是所需要返回的数据。
+AJAX返回的数据可以用JSON来接收，然后再通过客户端复杂的JavaScript脚本解析和渲染这些JSON格式的数据。
+从而在无需重新加载整个网页的情况下，可以使网页实现异步更新。
+-->
+
